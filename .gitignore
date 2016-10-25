@@ -1,0 +1,11 @@
+/target/
+/.classpath
+/.project
+/.settings/
+/.vagrant/
+/.cache-main
+/.cache-tests
+/.toDelete
+/*.iml
+/project/target/
+/.idea/

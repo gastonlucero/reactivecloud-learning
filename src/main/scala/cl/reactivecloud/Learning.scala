@@ -1,0 +1,64 @@
+package cl.reactivecloud
+
+import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, TimeUnit}
+import java.util.logging.Logger
+
+import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.pattern.AskSupport
+import akka.util.Timeout
+import cl.reactivecloud.commons._
+import cl.reactivecloud.session.{MapSessionStorage, TokenValidator}
+import cl.reactivecloud.streams.connector.StreamConnector
+import cl.reactivecloud.streams.core.StreamBrokerActor
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+
+import scala.concurrent.Await
+
+/**
+  * Created by papelacho on 2016-10-24.
+  */
+object Learning extends App with AskSupport {
+
+  implicit val sessionStorage = new MapSessionStorage
+  implicit val tokenValidator = new TokenValidator
+
+  implicit val system = ActorSystem("learning")
+  implicit val executionContext = system.dispatcher
+  implicit val timeout = Timeout(5, TimeUnit.SECONDS)
+
+  val streamBroker = system.actorOf(StreamBrokerActor.props())
+
+  // implementacion de un conector tipo Cola
+  val queue = new ArrayBlockingQueue[Response[Any]](10)
+
+  def receive(response: Response[Any]) : Unit = {
+    queue.put(response)
+  }
+
+  val streamConnector = system.actorOf(StreamConnector.props(streamBroker, receive))
+  val mapper = new ObjectMapper()
+  mapper.registerModule(DefaultScalaModule)
+  new Thread(new Runnable{
+    def run(): Unit = {
+      while(true)
+        println(mapper.writeValueAsString(queue.take()))
+    }
+  }).start()
+
+  Thread.sleep(500)
+
+  streamConnector ! Message(Login("wenaleke"))
+  streamConnector ! Message(Subscribe(Seq(new Base)))
+  streamConnector ! Message(Poll(10))
+  streamConnector ! Message(Subscribe(Seq(new Base)))
+  streamConnector ! Message(Poll(10))
+  streamConnector ! Message(Login("wenaleke"))
+  streamConnector ! Message(Subscribe(Seq(new Base)))
+  streamConnector ! Message(Poll(10))
+
+  Thread.sleep(1000)
+
+  system.terminate()
+  System.exit(0)
+}
