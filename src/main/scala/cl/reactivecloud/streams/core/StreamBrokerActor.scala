@@ -1,12 +1,8 @@
 package cl.reactivecloud.streams.core
 
-import java.util.UUID
-
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import cl.reactivecloud.commons.{Login, Message, Response}
-import cl.reactivecloud.session.{SessionStorage, TokenValidator}
-
-import scala.collection.mutable
+import akka.actor.{Actor, ActorLogging, Props}
+import cl.reactivecloud.commons._
+import cl.reactivecloud.storage.{StreamStorage, SessionStorage, TokenValidator}
 
 /**
   * Created by papelacho on 2016-10-24.
@@ -16,38 +12,42 @@ object StreamBrokerActor {
     *
     * @param sessionStorage
     * @param tokenValidator
+    * @param instanceStorage
     * @return
     */
-  def props()(implicit sessionStorage: SessionStorage, tokenValidator: TokenValidator): Props = Props(new StreamBrokerActor())
+  def props()(implicit sessionStorage: SessionStorage, tokenValidator: TokenValidator, instanceStorage: StreamStorage): Props = Props(new StreamBrokerActor())
 }
 
-class StreamBrokerActor(implicit val sessionStorage: SessionStorage, implicit val tokenValidator: TokenValidator) extends Actor with ActorLogging {
+class StreamBrokerActor(implicit val sessionStorage: SessionStorage, implicit val tokenValidator: TokenValidator, implicit val instanceStorage: StreamStorage) extends Actor with ActorLogging {
 
-  val namedInstance = mutable.Map[String, ActorRef]()
-
-  /**
-    * Si viene un login, entonces crea una sesion y un actor asociado
-    *
-    * @return
-    */
   def receive = {
-    case x: Message[Login] =>
+    case Message(x) => x match {
 
-      //    Valida Login.token o Response(error)
-      tokenValidator.validate(x.value) match {
+      // Si Connect, obtiene sesion e instancia
+      case connect: Connect =>
+        //    Valida Login.token o Response(error)
+        // Valida el id de session por que debe haber pasado por un StreamConnector, el cual realmente crea
+        sessionStorage.getSession(connect.sessionId) match {
+          case Some(session) =>
 
-        case Some(user) =>
-          // Valida el id de session por que debe haber pasado por un cliente, el cual realmente crea
-          sender ! sessionStorage.ifValidSession(x.value.sid, session => {
-            val cid = x.value.cid.getOrElse(UUID.randomUUID().toString)
-            // Si s"${user}-${cid}" entonces Response(ActorRef) o Response(system.actorOf[])
-            val instance = namedInstance.getOrElseUpdate(s"$user-$cid", context.system.actorOf(StreamInstanceActor.props(user, x.value)))
-            session.core = instance
-            Response(Right(instance))
-          })
-        case _ => sender ! Response(Left(new Exception("Login Failed")))
-      }
+            // crea nombre para instancia, puede que sean varias sesiones conectandose a la misma
+            val instanceId = instanceStorage.createName(session, connect)
 
+            // crea o obtiene instancia
+            val instance = instanceStorage.getOrUpdate(instanceId, context.system.actorOf(StreamActor.props(instanceId), instanceId))
+
+            // actualiza sesion con instancia
+            session.instanceId = instanceId
+            // TODO guardar session
+
+            // agrega sesion a instancia pero que notifique al original
+            instance.tell(Message(ConnectSession(session.id)), sender)
+
+          case _ => sender ! Response(Left("Internal Connection Failed: No Session Available"))
+        }
+      case _ => sender ! Response(Left("Internal Connection Failed: Wrong Message"))
+    }
+    case _ => sender ! Response(Left("Internal Connection Failed:Wrong Interaction"))
   }
 
 }
