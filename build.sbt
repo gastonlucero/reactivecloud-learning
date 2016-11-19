@@ -6,7 +6,7 @@ val zookeeperVersion = "3.4.7"
 val cassandraVersion = "3.1.0"
 val guavaVersion = "19.0"
 val mongoVersion = "3.3.0"
-
+val scalaTestVersion = "3.0.0"
 
 lazy val commonSettings = Seq(
   organization := "cl.reactivecloud",
@@ -16,7 +16,8 @@ lazy val commonSettings = Seq(
   resolvers += DefaultMavenRepository,
   libraryDependencies += "junit" % "junit" % "4.12" % Test,
   libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % Test,
-  libraryDependencies += "org.apache.curator" % "curator-framework" % "2.11.0"
+  libraryDependencies += "org.apache.curator" % "curator-framework" % "2.11.0",
+  libraryDependencies += "org.scalatest" %% "scalatest" % scalaTestVersion % Test
 )
 
 lazy val akka = (project in file("."))
