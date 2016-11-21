@@ -1,4 +1,4 @@
-import cl.reactivecloud.ZookeeperLearning._
+
 import org.apache.curator.framework.imps.CuratorFrameworkState
 import org.apache.curator.utils.ZKPaths
 import org.junit.runner.RunWith
@@ -11,6 +11,7 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class ZookeeperTest extends FunSuite {
 
+  import
   implicit val client = connectZookeeper()
 
   val clientAuth = connectZookeeper("test", "test")
@@ -36,12 +37,12 @@ class ZookeeperTest extends FunSuite {
   }
 
   test("Get data to node node1"){
-    assert(getSetting("/node1").asString != null)
+    assert(getProperty("/node1").asString != null)
   }
 
   test("Set data to node node1"){
     client.setData().forPath("/node1"," append data to node 1".getBytes())
-    assert(getSetting("/node1").asString != null)
+    assert(getProperty("/node1").asString != null)
   }
 
   test("Delete node subnode1"){

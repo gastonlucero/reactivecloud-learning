@@ -26,8 +26,8 @@ object ZookeeperLearning extends App with DistributedConfig {
   if (client.checkExists().forPath("/node1/subnode1") == null) {
     client.create().forPath(ZKPaths.makePath("/node1", "/subnode1"), mapper.writeValueAsBytes("no esun int"))
   }
-  println(getOptionalSetting("/node1/subnode1").asOptionalInt.getOrElse(100))
-  println(getOptionalSetting("/node1/subnode1").asOptionalString.getOrElse("S/I"))
+  println(getOptionalProperty("/node1/subnode1").asOptionalInt.getOrElse(100))
+  println(getOptionalProperty("/node1/subnode1").asOptionalString.getOrElse("S/I"))
 
   val state = client.getState
   println("Estado del cliente", state)

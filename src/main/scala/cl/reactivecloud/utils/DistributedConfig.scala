@@ -26,7 +26,7 @@ trait DistributedConfig extends Base {
   // these are reasonable arguments for the ExponentialBackoffRetry. The first
   // retry will wait 1 second - the second will wait up to 2 seconds - the
   // third will wait up to 4 seconds.
-  private lazy val retryPolicy = new ExponentialBackoffRetry(1000, 3);
+  private lazy val retryPolicy = new ExponentialBackoffRetry(1000, 3)
 
   def common(): CuratorFrameworkFactory.Builder = {
     val client = CuratorFrameworkFactory.builder()
@@ -55,31 +55,13 @@ trait DistributedConfig extends Base {
     client
   }
 
-
-  /**
-    * Retrieves raw value from remote configuration.
-    *
-    * @param path path to configuration entry; for example, <i>section.subsection.entry</i>
-    * @param client ZooKeeper remote config client
-    * @return configuration setting value
-    */
-  def getSetting(path: String)(implicit client: CuratorFramework): Array[Byte] = {
+  def getProperty(path: String)(implicit client: CuratorFramework): Array[Byte] = {
     client.getData.forPath(path)
   }
 
-  /**
-    * Retrieves optional raw value from remote configuration.
-    *
-    * @param path path to configuration entry; for example, <i>section.subsection.entry</i>
-    * @param client remote configuration client
-    * @return optional configuration setting value
-    */
-  def getOptionalSetting(path: String)(implicit client: CuratorFramework): Option[Array[Byte]] = {
-    Try {
-      getSetting(path)
-    }.toOption
+  def getOptionalProperty(path: String)(implicit client: CuratorFramework): Option[Array[Byte]] = {
+    Try(getProperty(path)).toOption
   }
-
 
   /**
     * Helps to convert data from ZooKeeper into base data types.
