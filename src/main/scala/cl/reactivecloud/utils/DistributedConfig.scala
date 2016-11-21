@@ -38,7 +38,7 @@ trait DistributedConfig extends Base {
     client
   }
 
-  implicit def connectZookeeper(user: String, pass: String): CuratorFramework = {
+  def connectZookeeper(user: String, pass: String): CuratorFramework = {
     val client = this.common().authorization("digest", (user + ":" + pass).getBytes())
       .aclProvider(new ACLProvider {
         override def getDefaultAcl: util.List[ACL] = ZooDefs.Ids.CREATOR_ALL_ACL
