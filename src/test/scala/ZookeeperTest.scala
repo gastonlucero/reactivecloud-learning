@@ -1,5 +1,6 @@
 import cl.reactivecloud.ZookeeperLearning._
 import org.apache.curator.framework.imps.CuratorFrameworkState
+import org.apache.curator.utils.ZKPaths
 import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
@@ -12,7 +13,7 @@ class ZookeeperTest extends FunSuite {
 
   implicit val client = connectZookeeper()
 
-  implicit val clientAuth = connectZookeeper("test", "test")
+  val clientAuth = connectZookeeper("test", "test")
 
   test("Zookeeper client") {
     assert(client.getState.equals(CuratorFrameworkState.STARTED))
@@ -24,9 +25,28 @@ class ZookeeperTest extends FunSuite {
 
   test("Create path under rc ") {
     if (client.checkExists().forPath("/node1") == null) {
-      println("creando node1 en /rc1/node1")
       client.create().forPath("/node1", "node 1 data".getBytes())
     }
+    assert(client.checkExists().forPath("/node1").getNumChildren == 0)
+  }
+
+  test("Create children") {
+    client.create().forPath(ZKPaths.makePath("/node1", "/subnode1"), "subnode1".getBytes)
+    assert(client.checkExists().forPath("/node1").getNumChildren == 1)
+  }
+
+  test("Get data to node node1"){
     assert(getSetting("/node1").asString != null)
   }
+
+  test("Set data to node node1"){
+    client.setData().forPath("/node1"," append data to node 1".getBytes())
+    assert(getSetting("/node1").asString != null)
+  }
+
+  test("Delete node subnode1"){
+    client.delete().forPath("/node1/subnode1")
+    assert(client.checkExists().forPath("/node1/subnode1") == null)
+  }
+
 }
